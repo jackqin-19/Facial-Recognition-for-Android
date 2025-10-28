@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menu_delete_manual"
+        android:title="仅删除手动标记"
+        android:titleCondensed="删除蓝色标记" />
+    <item
+        android:id="@+id/menu_restore_system"
+        android:title="仅恢复系统标记"
+        android:titleCondensed="恢复红色标记" />
+    <item
+        android:id="@+id/menu_full_reset"
+        android:title="全量重置"
+        android:titleCondensed="恢复初始状态" />
+</menu>

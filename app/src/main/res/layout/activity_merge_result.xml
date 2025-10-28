@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- 顶部工具栏 -->
+    <LinearLayout
+        android:id="@+id/layout_toolbar_top"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="#000000"
+        android:orientation="horizontal"
+        android:paddingHorizontal="10dp">
+
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="50dp"
+            android:layout_height="match_parent"
+            android:src="@android:drawable/ic_media_previous"
+            app:tint="#FFFFFF"
+            android:contentDescription="返回按钮" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="合并统计结果"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp" />
+
+        <ImageButton
+            android:id="@+id/btn_history"
+            android:layout_width="50dp"
+            android:layout_height="match_parent"
+            android:src="@android:drawable/ic_menu_recent_history"
+            app:tint="#FFFFFF"
+            android:contentDescription="历史记录按钮" />
+    </LinearLayout>
+
+    <!-- 总人数显示 -->
+    <TextView
+        android:id="@+id/tv_total_count"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/layout_toolbar_top"
+        android:background="#4CAF50"
+        android:padding="15dp"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <!-- 滚动视图 -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/tv_total_count"
+        android:layout_above="@id/layout_toolbar_bottom">
+
+        <!-- 结果列表 -->
+        <LinearLayout
+            android:id="@+id/ll_result_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="10dp" />
+    </ScrollView>
+
+    <!-- 底部工具栏 -->
+    <LinearLayout
+        android:id="@+id/layout_toolbar_bottom"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_alignParentBottom="true"
+        android:background="#000000"
+        android:orientation="horizontal"
+        android:paddingHorizontal="10dp">
+
+        <Button
+            android:id="@+id/btn_save_record"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginRight="5dp"
+            android:backgroundTint="#2196F3"
+            android:text="保存记录"
+            android:textColor="#FFFFFF"
+            android:contentDescription="保存记录按钮" />
+
+        <ImageButton
+            android:id="@+id/btn_export"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginLeft="5dp"
+            android:src="@android:drawable/ic_menu_share"
+            android:backgroundTint="#FF9800"
+            app:tint="#FFFFFF"
+            android:contentDescription="导出按钮" />
+    </LinearLayout>
+
+</RelativeLayout>

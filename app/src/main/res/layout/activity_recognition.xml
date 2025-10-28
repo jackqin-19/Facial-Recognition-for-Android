@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- 图片显示区域 - 使用正确的独立类引用路径 -->
+    <com.example.facialrecognition.CustomImageView
+        android:id="@+id/image_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:adjustViewBounds="true"
+        android:scaleType="fitCenter" />
+
+    <!-- 低置信度提示 -->
+    <TextView
+        android:id="@+id/tv_low_confidence_warning"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:background="#FFFF9800"
+        android:padding="10dp"
+        android:textColor="#000000"
+        android:textSize="16sp"
+        android:visibility="gone" />
+
+    <!-- 人数统计 -->
+    <TextView
+        android:id="@+id/tv_person_count"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/layout_toolbar"
+        android:background="#80000000"
+        android:padding="10dp"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp" />
+
+    <!-- 工具栏 -->
+    <LinearLayout
+        android:id="@+id/layout_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_alignParentBottom="true"
+        android:background="#000000"
+        android:orientation="horizontal"
+        android:paddingHorizontal="10dp">
+
+        <ImageButton
+            android:id="@+id/btn_undo"
+            android:layout_width="50dp"
+            android:layout_height="match_parent"
+            android:src="@android:drawable/ic_input_get"
+            app:tint="#FFFFFF"
+            android:contentDescription="撤销操作" />
+
+        <ImageButton
+            android:id="@+id/btn_redo"
+            android:layout_width="50dp"
+            android:layout_height="match_parent"
+            android:src="@android:drawable/ic_input_get"
+            app:tint="#FFFFFF"
+            android:contentDescription="重做操作" />
+
+        <Button
+            android:id="@+id/btn_clear_manual"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="10dp"
+            android:backgroundTint="#FF9800"
+            android:text="清空手动"
+            android:textColor="#FFFFFF"
+            android:contentDescription="清空手动标记按钮" />
+
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="50dp"
+            android:layout_height="match_parent"
+            android:src="@android:drawable/ic_media_previous"
+            app:tint="#FFFFFF"
+            android:contentDescription="返回按钮" />
+
+        <Button
+            android:id="@+id/btn_next"
+            android:layout_width="80dp"
+            android:layout_height="match_parent"
+            android:backgroundTint="#4CAF50"
+            android:text="下一步"
+            android:textColor="#FFFFFF"
+            android:contentDescription="下一步按钮" />
+    </LinearLayout>
+
+</RelativeLayout>
