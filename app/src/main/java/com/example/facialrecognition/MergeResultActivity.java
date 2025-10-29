@@ -13,6 +13,7 @@ import android.graphics.PointF;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -51,6 +52,8 @@ public class MergeResultActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_merge_result);
 
+        Log.d("Navigation", "MergeResultActivity创建");
+
         // 初始化视图
         tvTotalCount = findViewById(R.id.tv_total_count);
         llResultList = findViewById(R.id.ll_result_list);
@@ -62,28 +65,80 @@ public class MergeResultActivity extends AppCompatActivity {
         // 初始化数据列表
         imageDataList = new ArrayList<>();
         
-        // 获取从上一个Activity传递的数据
-        ImageData imageData = getIntent().getParcelableExtra("IMAGE_DATA");
-        if (imageData != null) {
-            imageDataList.add(imageData);
-        } else {
-            // 从历史记录页面传递的CountRecord对象
-            CountRecord countRecord = getIntent().getParcelableExtra("COUNT_RECORD");
-            if (countRecord != null) {
-                imageDataList = countRecord.getImageDataList();
-                if (imageDataList == null) {
-                    imageDataList = new ArrayList<>();
+        try {
+            Log.d("Navigation", "开始获取Intent数据");
+            
+            // 安全地从Bundle中获取数据，而不是直接从Intent获取
+            Bundle extras = getIntent().getExtras();
+            if (extras == null) {
+                Log.e("Navigation", "Intent中没有额外数据");
+                Toast.makeText(this, "数据传输错误", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            // 方法1：使用getParcelable安全获取
+            ImageData imageData = extras.getParcelable("IMAGE_DATA");
+            
+            // 方法2：如果方法1失败，尝试创建一个新的ImageData实例
+            if (imageData == null) {
+                Log.w("Navigation", "无法直接获取IMAGE_DATA，创建默认实例");
+                // 创建一个空的ImageData实例
+                imageData = new ImageData("", null, ImageData.AreaType.FRONT);
+            } else {
+                Log.d("Navigation", "成功获取IMAGE_DATA");
+                
+                // 修复：清理imageData中的Person列表，确保没有null元素
+                if (imageData.getDetectedPersons() != null) {
+                    List<Person> cleanPersons = new ArrayList<>();
+                    for (Person p : imageData.getDetectedPersons()) {
+                        if (p != null) {
+                            cleanPersons.add(p);
+                        }
+                    }
+                    imageData.setDetectedPersons(cleanPersons);
+                }
+                
+                // 确保clearOperationType是有效字符串
+                if (imageData.getClearOperationType() == null || imageData.getClearOperationType().contains("未执行")) {
+                    imageData.setClearOperationType("default");
                 }
             }
-        }
+            
+            // 添加到列表
+            imageDataList.add(imageData);
+            Log.d("Navigation", "添加数据到列表，人数: " + imageData.getTotalCount());
+            
+            // 如果没有获取到数据，尝试COUNT_RECORD
+            if (imageDataList.isEmpty()) {
+                Log.d("Navigation", "数据列表为空，尝试获取COUNT_RECORD");
+                CountRecord countRecord = extras.getParcelable("COUNT_RECORD");
+                Log.d("Navigation", "尝试获取COUNT_RECORD: " + (countRecord != null ? "成功" : "失败"));
+                
+                if (countRecord != null) {
+                    imageDataList = countRecord.getImageDataList();
+                    if (imageDataList == null) {
+                        imageDataList = new ArrayList<>();
+                    }
+                }
+            }
+            
+            Log.d("Navigation", "数据列表初始化完成，size: " + imageDataList.size());
 
-        // 执行合并统计
-        performMerge();
-        
-        // 更新UI
-        updateTotalCount();
-        showResultList();
-        checkForOverlaps();
+            // 执行合并统计
+            performMerge();
+            Log.d("Navigation", "合并统计完成，总人数: " + totalCount);
+            
+            // 更新UI
+            updateTotalCount();
+            showResultList();
+            checkForOverlaps();
+            Log.d("Navigation", "UI更新完成");
+
+        } catch (Exception e) {
+            Log.e("Navigation", "MergeResultActivity初始化失败: " + e.getMessage(), e);
+            Toast.makeText(this, "初始化失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            // 即使出错也继续设置按钮监听器，确保用户可以返回
+        }
 
         // 设置按钮监听器
         btnBack.setOnClickListener(v -> finish());

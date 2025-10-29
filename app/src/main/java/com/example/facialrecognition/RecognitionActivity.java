@@ -12,6 +12,7 @@ import android.graphics.PointF;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import com.example.facialrecognition.FaceDetectorManager;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
@@ -41,6 +42,8 @@ public class RecognitionActivity extends AppCompatActivity {
     private ImageData imageData;
     private Bitmap originalBitmap;
     private Bitmap markedBitmap;
+    private Matrix imageMatrix = new Matrix();
+    private FaceDetectorManager faceDetectorManager;
     private List<Operation> operationHistory;
     private int currentOperationIndex;
     private boolean isFirstDeleteSystem = true;
@@ -87,6 +90,9 @@ public class RecognitionActivity extends AppCompatActivity {
         // 初始化操作历史
         operationHistory = new ArrayList<>();
         currentOperationIndex = -1;
+        
+        // 初始化人脸检测器管理器
+        faceDetectorManager = new FaceDetectorManager(this);
 
         // 获取传递的图片路径和区域类型
         String imagePath = getIntent().getStringExtra("IMAGE_PATH");
@@ -201,36 +207,61 @@ public class RecognitionActivity extends AppCompatActivity {
 
     private void startRecognition() {
         // 显示加载提示
-        Toast.makeText(this, "正在进行人数识别...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "正在进行人脸检测...", Toast.LENGTH_SHORT).show();
 
-        // 模拟AI识别过程
-        new Handler().postDelayed(() -> {
-            performRecognition();
-            updateMarkedImage();
-            updatePersonCount();
-            updateLowConfidenceWarning();
-        }, 2000); // 模拟2秒的识别时间
+        // 使用Google ML Kit进行真实的人脸检测
+        performRecognition();
     }
 
     private void performRecognition() {
-        // 这里是模拟的识别结果，实际应该调用真实的AI模型
-        List<Person> detectedPersons = new ArrayList<>();
+        // 使用FaceDetectorManager进行真实的人脸检测
+        if (faceDetectorManager != null && originalBitmap != null) {
+            faceDetectorManager.detectFaces(originalBitmap, new FaceDetectorManager.DetectionCallback() {
+                @Override
+                public void onDetectionCompleted(List<Person> detectedPersons) {
+                    // 设置检测到的人脸数据
+                    imageData.setDetectedPersons(detectedPersons);
+                    imageData.setRecognizedCount(detectedPersons.size());
+                    
+                    // 更新UI显示
+                    runOnUiThread(() -> {
+                        updateMarkedImage();
+                        updatePersonCount();
+                        updateLowConfidenceWarning();
+                        
+                        // 显示检测完成提示
+                        String message = "成功检测到 " + detectedPersons.size() + " 个人脸";
+                        Toast.makeText(RecognitionActivity.this, message, Toast.LENGTH_SHORT).show();
+                    });
+                }
 
-        // 根据图片尺寸生成一些模拟的标记点
-        int width = originalBitmap.getWidth();
-        int height = originalBitmap.getHeight();
-
-        // 生成模拟数据
-        int count = 20 + (int)(Math.random() * 10); // 模拟20-30个人
-        for (int i = 0; i < count; i++) {
-            float x = 100 + (float)(Math.random() * (width - 200));
-            float y = 100 + (float)(Math.random() * (height - 200));
-            float confidence = 0.6f + (float)(Math.random() * 0.4f); // 0.6-1.0的置信度
-            detectedPersons.add(new Person(i + 1, new PointF(x, y), confidence));
+                @Override
+                public void onError(Exception e) {
+                    // 处理错误情况
+                    runOnUiThread(() -> {
+                        Toast.makeText(RecognitionActivity.this, "人脸检测失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Log.e("FaceDetection", "Error detecting faces: ", e);
+                        
+                        // 如果检测失败，生成少量模拟数据以便继续使用应用
+                        generateFallbackData();
+                    });
+                }
+            });
+        } else {
+            // 如果没有初始化，使用回退方案
+            generateFallbackData();
         }
-
-        imageData.setDetectedPersons(detectedPersons);
-        imageData.setRecognizedCount(detectedPersons.size());
+    }
+    
+    // 当人脸检测失败时使用的回退数据生成方法
+    private void generateFallbackData() {
+        List<Person> fallbackPersons = new ArrayList<>();
+        fallbackPersons.add(new Person(1, new PointF(originalBitmap.getWidth() / 2f, originalBitmap.getHeight() / 2f)));
+        imageData.setDetectedPersons(fallbackPersons);
+        imageData.setRecognizedCount(1);
+        updateMarkedImage();
+        updatePersonCount();
+        updateLowConfidenceWarning();
     }
 
     private void applyMatrix() {
@@ -473,10 +504,52 @@ public class RecognitionActivity extends AppCompatActivity {
     }
 
     private void goToNext() {
-        // 跳转到合并统计页面
-        Intent intent = new Intent(this, MergeResultActivity.class);
-        intent.putExtra("IMAGE_DATA", imageData);
-        startActivity(intent);
+        try {
+            Log.d("Navigation", "开始跳转到MergeResultActivity");
+            
+            // 检查imageData是否有效
+            if (imageData == null) {
+                Log.e("Navigation", "imageData为空，无法跳转");
+                Toast.makeText(this, "数据错误，无法跳转", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            // 修复：安全检查detectedPersons列表，移除null元素
+            if (imageData.getDetectedPersons() != null) {
+                List<Person> cleanPersons = new ArrayList<>();
+                for (Person p : imageData.getDetectedPersons()) {
+                    if (p != null) {
+                        cleanPersons.add(p);
+                    }
+                }
+                imageData.setDetectedPersons(cleanPersons);
+            }
+            
+            // 确保clearOperationType不为null或特殊值
+            if (imageData.getClearOperationType() == null || imageData.getClearOperationType().contains("未执行")) {
+                imageData.setClearOperationType("default");
+            }
+            
+            Log.d("Navigation", "imageData有效，人数统计: " + imageData.getTotalCount());
+            
+            // 跳转到合并统计页面
+            Intent intent = new Intent(this, MergeResultActivity.class);
+            Log.d("Navigation", "创建Intent，目标: MergeResultActivity");
+            
+            // 使用Bundle来封装数据，增加一层隔离
+            Bundle bundle = new Bundle();
+            bundle.putParcelable("IMAGE_DATA", imageData);
+            intent.putExtras(bundle);
+            
+            Log.d("Navigation", "通过Bundle添加IMAGE_DATA到Intent");
+            
+            startActivity(intent);
+            Log.d("Navigation", "执行startActivity，跳转完成");
+            
+        } catch (Exception e) {
+            Log.e("Navigation", "跳转到MergeResultActivity失败: " + e.getMessage(), e);
+            Toast.makeText(this, "跳转失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
@@ -530,6 +603,15 @@ public class RecognitionActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // 释放人脸检测器资源
+        if (faceDetectorManager != null) {
+            faceDetectorManager.close();
+        }
+    }
+    
     private float[] convertToOriginalCoordinates(float touchX, float touchY) {
         if (originalBitmap == null || imageView == null) {
             return new float[]{0, 0};

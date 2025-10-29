@@ -31,18 +31,39 @@ public class Person implements Parcelable {
     }
 
     protected Person(Parcel in) {
-        id = in.readInt();
-        position = in.readParcelable(PointF.class.getClassLoader());
-        confidence = in.readFloat();
-        isManual = in.readByte() != 0;
-        isMarkedAsDeleted = in.readByte() != 0;
-        isUncertain = in.readByte() != 0;
+        try {
+            id = in.readInt();
+            
+            // 安全地读取PointF对象，确保不为null
+            position = in.readParcelable(PointF.class.getClassLoader());
+            if (position == null) {
+                position = new PointF(0, 0); // 默认位置
+            }
+            
+            confidence = in.readFloat();
+            isManual = in.readByte() != 0;
+            isMarkedAsDeleted = in.readByte() != 0;
+            isUncertain = in.readByte() != 0;
+        } catch (Exception e) {
+            // 捕获所有异常，初始化默认值
+            id = 0;
+            position = new PointF(0, 0);
+            confidence = 0.0f;
+            isManual = false;
+            isMarkedAsDeleted = false;
+            isUncertain = false;
+        }
     }
 
     public static final Creator<Person> CREATOR = new Creator<Person>() {
         @Override
         public Person createFromParcel(Parcel in) {
-            return new Person(in);
+            try {
+                return new Person(in);
+            } catch (Exception e) {
+                // 捕获所有异常，返回默认实例
+                return new Person(0, new PointF(0, 0), 0.0f);
+            }
         }
 
         @Override
