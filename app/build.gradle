@@ -55,4 +55,7 @@ dependencies {
     
     // Google ML Kit 人脸检测API (设备端)
     implementation 'com.google.mlkit:face-detection:16.1.5'
+    
+    // Gson库用于JSON序列化
+    implementation 'com.google.code.gson:gson:2.10.1'
 }

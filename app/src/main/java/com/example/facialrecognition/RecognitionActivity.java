@@ -26,6 +26,7 @@ import android.widget.Toast;
 
 import com.example.facialrecognition.model.ImageData;
 import com.example.facialrecognition.model.Person;
+import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -94,13 +95,12 @@ public class RecognitionActivity extends AppCompatActivity {
         // 初始化人脸检测器管理器
         faceDetectorManager = new FaceDetectorManager(this);
 
-        // 获取传递的图片路径和区域类型
-        String imagePath = getIntent().getStringExtra("IMAGE_PATH");
-        int areaTypeOrdinal = getIntent().getIntExtra("AREA_TYPE", 1);
-        ImageData.AreaType areaType = ImageData.AreaType.values()[areaTypeOrdinal];
+        // 获取传递的图片路径（不再需要区域类型）
+        String imagePath = getIntent().getStringExtra("IMAGE_PATH") != null ? 
+                          getIntent().getStringExtra("IMAGE_PATH") : "";
 
         // 加载图片
-        loadImage(imagePath, areaType);
+        loadImage(imagePath);
 
         // 设置手势检测器
         scaleGestureDetector = new ScaleGestureDetector(this, new ScaleListener());
@@ -188,7 +188,7 @@ public class RecognitionActivity extends AppCompatActivity {
         startRecognition();
     }
 
-    private void loadImage(String imagePath, ImageData.AreaType areaType) {
+    private void loadImage(String imagePath) {
         originalBitmap = BitmapFactory.decodeFile(imagePath);
         if (originalBitmap == null) {
             Toast.makeText(this, "图片加载失败", Toast.LENGTH_SHORT).show();
@@ -196,8 +196,8 @@ public class RecognitionActivity extends AppCompatActivity {
             return;
         }
 
-        // 初始化ImageData
-        imageData = new ImageData(imagePath, originalBitmap, areaType);
+        // 初始化ImageData（不再需要areaType参数）
+        imageData = new ImageData(imagePath, originalBitmap);
         markedBitmap = originalBitmap.copy(Bitmap.Config.ARGB_8888, true);
         imageView.setImageBitmap(markedBitmap);
         
@@ -505,17 +505,19 @@ public class RecognitionActivity extends AppCompatActivity {
 
     private void goToNext() {
         try {
-            Log.d("Navigation", "开始跳转到MergeResultActivity");
+            Log.d("Navigation", "开始跳转到ConfirmRecognitionActivity");
             
-            // 检查imageData是否有效
+            // 确保数据有效
             if (imageData == null) {
                 Log.e("Navigation", "imageData为空，无法跳转");
                 Toast.makeText(this, "数据错误，无法跳转", Toast.LENGTH_SHORT).show();
                 return;
             }
             
-            // 修复：安全检查detectedPersons列表，移除null元素
-            if (imageData.getDetectedPersons() != null) {
+            // 安全检查detectedPersons列表，移除null元素和确保列表不为null
+            if (imageData.getDetectedPersons() == null) {
+                imageData.setDetectedPersons(new ArrayList<>());
+            } else {
                 List<Person> cleanPersons = new ArrayList<>();
                 for (Person p : imageData.getDetectedPersons()) {
                     if (p != null) {
@@ -525,30 +527,44 @@ public class RecognitionActivity extends AppCompatActivity {
                 imageData.setDetectedPersons(cleanPersons);
             }
             
-            // 确保clearOperationType不为null或特殊值
-            if (imageData.getClearOperationType() == null || imageData.getClearOperationType().contains("未执行")) {
-                imageData.setClearOperationType("default");
-            }
+            // 使用更安全的方式获取和日志记录人数
+            int validCount = imageData.getValidPersonCount();
+            Log.d("Navigation", "imageData有效，有效人数统计: " + validCount);
             
-            Log.d("Navigation", "imageData有效，人数统计: " + imageData.getTotalCount());
+            // 创建一个轻量级的ImageData副本，不包含完整的Bitmap和缩略图
+            // 这些大型图片对象会导致序列化问题，我们只传递需要的数据
+            ImageData lightCopy = new ImageData(imageData.getImagePath(), null);
+            lightCopy.setDetectedPersons(new ArrayList<>(imageData.getDetectedPersons()));
+            lightCopy.setRecognizedCount(imageData.getRecognizedCount());
+            lightCopy.setManuallyAddedCount(imageData.getManuallyAddedCount());
+            lightCopy.setManuallyDeletedCount(imageData.getManuallyDeletedCount());
+            lightCopy.setClearOperationType(imageData.getClearOperationType());
+            // 不传递Bitmap和Thumbnail，避免JSON序列化问题
             
-            // 跳转到合并统计页面
-            Intent intent = new Intent(this, MergeResultActivity.class);
-            Log.d("Navigation", "创建Intent，目标: MergeResultActivity");
+            // 使用Gson将数据转换为JSON字符串
+            Gson gson = new Gson();
+            String json = gson.toJson(lightCopy);
+            Log.d("Navigation", "成功将imageData转换为JSON字符串，长度: " + json.length());
             
-            // 使用Bundle来封装数据，增加一层隔离
-            Bundle bundle = new Bundle();
-            bundle.putParcelable("IMAGE_DATA", imageData);
-            intent.putExtras(bundle);
+            // 跳转到确认识别结果页面
+            Intent intent = new Intent(this, ConfirmRecognitionActivity.class);
+            Log.d("Navigation", "创建Intent，目标: ConfirmRecognitionActivity");
             
-            Log.d("Navigation", "通过Bundle添加IMAGE_DATA到Intent");
+            // 通过Intent传递JSON字符串
+            intent.putExtra("image_json", json);
+            Log.d("Navigation", "成功添加JSON数据到Intent");
+            
+            // 仍然保留基本数据参数作为备用
+            intent.putExtra("RECOGNIZED_COUNT", imageData.getRecognizedCount());
+            intent.putExtra("MANUALLY_ADDED_COUNT", imageData.getManuallyAddedCount());
+            intent.putExtra("MANUALLY_DELETED_COUNT", imageData.getManuallyDeletedCount());
             
             startActivity(intent);
             Log.d("Navigation", "执行startActivity，跳转完成");
             
         } catch (Exception e) {
-            Log.e("Navigation", "跳转到MergeResultActivity失败: " + e.getMessage(), e);
-            Toast.makeText(this, "跳转失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.e("Navigation", "跳转到ConfirmRecognitionActivity失败", e);
+            Toast.makeText(this, "跳转失败，请重试", Toast.LENGTH_SHORT).show();
         }
     }
 

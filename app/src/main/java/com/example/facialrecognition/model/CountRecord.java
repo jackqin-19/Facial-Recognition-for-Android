@@ -48,22 +48,18 @@ public class CountRecord implements Parcelable {
     public static CountRecord createMockRecord(int index) {
         List<ImageData> mockImageDataList = new ArrayList<>();
         
-        // 创建模拟的ImageData
-        for (ImageData.AreaType areaType : ImageData.AreaType.values()) {
-            // 这里创建模拟的ImageData对象
-            // 实际应用中应该生成更真实的数据
-            int personCount = 20 + index * 5 + areaType.ordinal() * 3;
-            List<Person> mockPersons = new ArrayList<>();
-            for (int i = 0; i < personCount; i++) {
-                mockPersons.add(new Person(i + 1, null, 0.8f));
-            }
-            
-            // 使用空字符串避免文件访问错误，因为模拟数据中的图片文件并不存在
-            String mockImagePath = "";
-            ImageData mockImageData = new ImageData(mockImagePath, null, areaType);
-            mockImageData.setDetectedPersons(mockPersons);
-            mockImageDataList.add(mockImageData);
+        // 创建模拟的ImageData - 不再使用区域类型，只创建一个图片数据
+        int personCount = 20 + index * 5;
+        List<Person> mockPersons = new ArrayList<>();
+        for (int i = 0; i < personCount; i++) {
+            mockPersons.add(new Person(i + 1, null, 0.8f));
         }
+        
+        // 使用空字符串避免文件访问错误，因为模拟数据中的图片文件并不存在
+        String mockImagePath = "";
+        ImageData mockImageData = new ImageData(mockImagePath, null);
+        mockImageData.setDetectedPersons(mockPersons);
+        mockImageDataList.add(mockImageData);
         
         // 创建并返回模拟记录
         CountRecord record = new CountRecord(mockImageDataList, 80 + index * 2);

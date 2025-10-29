@@ -4,8 +4,4 @@
         android:id="@+id/menu_record_delete"
         android:title="删除"
         android:icon="@android:drawable/ic_menu_delete" />
-    <item
-        android:id="@+id/menu_record_export"
-        android:title="导出"
-        android:icon="@android:drawable/ic_menu_share" />
 </menu>

@@ -5,6 +5,9 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 public class Person implements Parcelable {
+    // 添加版本控制
+    private static final int PARCEL_VERSION = 1;
+    
     private int id;
     private PointF position; // 中心点位置
     private float confidence; // 置信度
@@ -32,18 +35,31 @@ public class Person implements Parcelable {
 
     protected Person(Parcel in) {
         try {
-            id = in.readInt();
+            // 读取版本号
+            int version = in.readInt();
             
-            // 安全地读取PointF对象，确保不为null
-            position = in.readParcelable(PointF.class.getClassLoader());
-            if (position == null) {
-                position = new PointF(0, 0); // 默认位置
+            if (version == PARCEL_VERSION) {
+                id = in.readInt();
+                
+                // 安全地读取PointF对象，确保不为null
+                position = in.readParcelable(PointF.class.getClassLoader());
+                if (position == null) {
+                    position = new PointF(0, 0); // 默认位置
+                }
+                
+                confidence = in.readFloat();
+                isManual = in.readByte() != 0;
+                isMarkedAsDeleted = in.readByte() != 0;
+                isUncertain = in.readByte() != 0;
+            } else {
+                // 处理旧版本或未知版本
+                id = 0;
+                position = new PointF(0, 0);
+                confidence = 0.0f;
+                isManual = false;
+                isMarkedAsDeleted = false;
+                isUncertain = false;
             }
-            
-            confidence = in.readFloat();
-            isManual = in.readByte() != 0;
-            isMarkedAsDeleted = in.readByte() != 0;
-            isUncertain = in.readByte() != 0;
         } catch (Exception e) {
             // 捕获所有异常，初始化默认值
             id = 0;
@@ -79,12 +95,32 @@ public class Person implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel parcel, int i) {
-        parcel.writeInt(id);
-        parcel.writeParcelable(position, i);
-        parcel.writeFloat(confidence);
-        parcel.writeByte((byte) (isManual ? 1 : 0));
-        parcel.writeByte((byte) (isMarkedAsDeleted ? 1 : 0));
-        parcel.writeByte((byte) (isUncertain ? 1 : 0));
+        try {
+            // 写入版本号
+            parcel.writeInt(PARCEL_VERSION);
+            
+            parcel.writeInt(id);
+            
+            // 确保position不为null
+            if (position == null) {
+                position = new PointF(0, 0);
+            }
+            parcel.writeParcelable(position, i);
+            
+            parcel.writeFloat(confidence);
+            parcel.writeByte((byte) (isManual ? 1 : 0));
+            parcel.writeByte((byte) (isMarkedAsDeleted ? 1 : 0));
+            parcel.writeByte((byte) (isUncertain ? 1 : 0));
+        } catch (Exception e) {
+            // 即使发生错误，也要确保写入一致的数据
+            parcel.writeInt(PARCEL_VERSION);
+            parcel.writeInt(0);
+            parcel.writeParcelable(new PointF(0, 0), i);
+            parcel.writeFloat(0.0f);
+            parcel.writeByte((byte) 0);
+            parcel.writeByte((byte) 0);
+            parcel.writeByte((byte) 0);
+        }
     }
 
     // Getters and setters

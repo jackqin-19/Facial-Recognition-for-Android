@@ -14,8 +14,10 @@ import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.util.Log;
 
 import com.example.facialrecognition.model.CountRecord;
+import com.example.facialrecognition.model.ImageData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +38,9 @@ public class HistoryActivity extends AppCompatActivity {
         
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_history);
+        
+        // 首次启动时清理假记录并初始化一些测试数据（仅用于演示）
+        initializeTestData();
 
         // 初始化视图
         recyclerView = findViewById(R.id.recycler_view_history);
@@ -45,7 +50,7 @@ public class HistoryActivity extends AppCompatActivity {
 
         // 初始化数据
         historyRecords = new ArrayList<>();
-        loadMockData(); // 加载模拟数据
+        loadHistoryData(); // 加载真实历史记录
 
         // 设置RecyclerView
         adapter = new HistoryAdapter(historyRecords);
@@ -58,13 +63,34 @@ public class HistoryActivity extends AppCompatActivity {
         btnTrash.setOnClickListener(v -> goToTrash());
     }
 
-    private void loadMockData() {
-        // 加载模拟的历史记录数据
-        // 实际应用中应该从数据库或文件中加载真实数据
-        for (int i = 0; i < 5; i++) {
-            // 创建模拟的历史记录
-            CountRecord mockRecord = CountRecord.createMockRecord(i);
-            historyRecords.add(mockRecord);
+    private void loadHistoryData() {
+        // 从HistoryManager加载真实的历史记录
+        historyRecords.clear();
+        historyRecords.addAll(HistoryManager.getInstance().getAllHistoryRecords());
+        
+        // 如果没有真实记录，添加一条提示
+        if (historyRecords.isEmpty()) {
+            Toast.makeText(this, "暂无历史记录，请先保存识别结果", Toast.LENGTH_SHORT).show();
+        }
+    }
+    
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 每次回到此页面时重新加载历史记录
+        loadHistoryData();
+        adapter.notifyDataSetChanged();
+    }
+    
+    /**
+     * 初始化测试数据（仅用于演示）
+     */
+    private void initializeTestData() {
+        // 如果没有历史记录，添加一些测试数据
+        if (HistoryManager.getInstance().getRecordCount() == 0) {
+            Log.d("HistoryActivity", "初始化测试数据");
+            // 这里可以添加测试数据，但为了避免假记录，我们不再添加模拟数据
+            // 用户需要通过正常流程保存真实记录
         }
     }
 
@@ -176,10 +202,16 @@ public class HistoryActivity extends AppCompatActivity {
     }
 
     private void viewRecordDetails(CountRecord record) {
-        // 查看记录详情
-        Intent intent = new Intent(this, MergeResultActivity.class);
-        intent.putExtra("COUNT_RECORD", record);
-        startActivity(intent);
+        // 新的查看记录详情方式
+        // 如果有图片数据，则跳转到RecognitionActivity查看第一个图片
+        if (record != null && record.getImageDataList() != null && !record.getImageDataList().isEmpty()) {
+            ImageData firstImageData = record.getImageDataList().get(0);
+            Intent intent = new Intent(this, RecognitionActivity.class);
+            intent.putExtra("IMAGE_PATH", firstImageData.getImagePath());
+            startActivity(intent);
+        } else {
+            Toast.makeText(this, "无可用的记录详情", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void showRecordOptions(View anchorView, CountRecord record) {
@@ -190,8 +222,6 @@ public class HistoryActivity extends AppCompatActivity {
             int itemId = item.getItemId();
             if (itemId == R.id.menu_record_delete) {
                 deleteRecord(record);
-            } else if (itemId == R.id.menu_record_export) {
-                exportRecord(record);
             }
             return true;
         });
@@ -200,16 +230,15 @@ public class HistoryActivity extends AppCompatActivity {
     }
 
     private void deleteRecord(CountRecord record) {
-        // 删除记录（移至回收站）
-        record.moveToTrash();
+        // 使用HistoryManager删除记录（移至回收站）
+        HistoryManager.getInstance().moveToTrash(record);
+        
+        // 从当前列表中移除并刷新UI
         historyRecords.remove(record);
         adapter.notifyDataSetChanged();
+        
         Toast.makeText(this, "记录已移至回收站", Toast.LENGTH_SHORT).show();
     }
 
-    private void exportRecord(CountRecord record) {
-        // 导出记录
-        Toast.makeText(this, "导出记录", Toast.LENGTH_SHORT).show();
-        // 实际应用中应该跳转到导出页面或直接执行导出操作
-    }
+
 }

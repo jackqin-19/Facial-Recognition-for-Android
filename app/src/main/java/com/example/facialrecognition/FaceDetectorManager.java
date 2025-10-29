@@ -85,12 +85,9 @@ public class FaceDetectorManager {
             facePosition.x = face.getBoundingBox().centerX();
             facePosition.y = face.getBoundingBox().centerY();
 
-            // 创建Person对象
-            Person person = new Person(id, facePosition);
+            // 创建Person对象 - 使用带置信度的构造函数，确保isManual为false（系统标记）
+            Person person = new Person(id, facePosition, 0.9f); // 设置默认高置信度
             person.setUncertain(false); // 默认设置为确定的检测结果
-
-            // 可以根据人脸置信度来设置uncertain状态
-            // 但ML Kit的API没有直接提供置信度值，可以根据其他特征判断
 
             persons.add(person);
             id++;

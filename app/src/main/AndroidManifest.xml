@@ -37,7 +37,7 @@
         <activity android:name=".HistoryActivity" android:exported="false" />
         <activity android:name=".RecognitionActivity" android:exported="false" />
         <activity android:name=".GuideActivity" android:exported="false" />
-        <activity android:name=".MergeResultActivity" android:exported="false" />
+        <activity android:name=".ConfirmRecognitionActivity" android:exported="false" />
     </application>
 
 </manifest>

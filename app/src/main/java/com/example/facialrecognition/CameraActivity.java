@@ -54,12 +54,9 @@ public class CameraActivity extends AppCompatActivity {
     private PreviewView previewView;
     private ImageCapture imageCapture;
     private ExecutorService cameraExecutor;
-    private RadioGroup radioGroupArea;
     private TextView tvGuide;
     private Canvas overlayCanvas;
     private Paint overlayPaint;
-    private ImageData.AreaType currentAreaType = ImageData.AreaType.MIDDLE;
-    private boolean isFirstUse = true;
     private boolean isSurfaceActive = true; // Flag to track if surface is active
     private ProcessCameraProvider cameraProvider; // Keep reference to camera provider
     private int cameraRetryCount = 0;
@@ -71,7 +68,6 @@ public class CameraActivity extends AppCompatActivity {
         setContentView(R.layout.activity_camera);
 
         previewView = findViewById(R.id.preview_view);
-        radioGroupArea = findViewById(R.id.radio_group_area);
         tvGuide = findViewById(R.id.tv_guide);
         Button btnCapture = findViewById(R.id.btn_capture);
         ImageButton btnBack = findViewById(R.id.btn_back);
@@ -80,29 +76,14 @@ public class CameraActivity extends AppCompatActivity {
         overlayPaint = new Paint();
         overlayPaint.setStyle(Paint.Style.STROKE);
         overlayPaint.setStrokeWidth(3);
-
-        // 区域选择监听器
-        radioGroupArea.setOnCheckedChangeListener((group, checkedId) -> {
-            if (checkedId == R.id.radio_front) {
-                currentAreaType = ImageData.AreaType.FRONT;
-                overlayPaint.setColor(Color.RED);
-                tvGuide.setText("请将前排座位纳入此框内拍摄，避免遗漏前排边缘人群");
-                if (isFirstUse) {
-                    showFirstUseGuide();
-                    isFirstUse = false;
-                }
-            } else if (checkedId == R.id.radio_middle) {
-                currentAreaType = ImageData.AreaType.MIDDLE;
-                overlayPaint.setColor(Color.YELLOW);
-                tvGuide.setText("请将中排座位完整纳入此框，覆盖前后排衔接区域");
-            } else if (checkedId == R.id.radio_back) {
-                currentAreaType = ImageData.AreaType.BACK;
-                overlayPaint.setColor(Color.BLUE);
-                tvGuide.setText("请将后排座位纳入此框，可适当抬高镜头覆盖后排角落");
-            }
-            // 更新预览区域
-            updatePreviewOverlay();
-        });
+        overlayPaint.setColor(Color.GREEN);
+        tvGuide.setText("请将整个需要识别的区域纳入相机画面");
+        
+        // 隐藏不再需要的区域选择RadioGroup
+        findViewById(R.id.radio_group_area).setVisibility(View.GONE);
+        
+        // 显示简单的拍照指导
+        showSimpleGuide();
 
         // 拍照按钮
         btnCapture.setOnClickListener(v -> takePhoto());
@@ -120,8 +101,8 @@ public class CameraActivity extends AppCompatActivity {
         }
     }
 
-    private void showFirstUseGuide() {
-        Toast.makeText(this, "红色框线对应前排区域，按框线拍摄更精准", Toast.LENGTH_LONG).show();
+    private void showSimpleGuide() {
+        Toast.makeText(this, "请确保画面清晰，尽量将所有需要识别的人群纳入画面", Toast.LENGTH_LONG).show();
     }
 
     private void updatePreviewOverlay() {
@@ -227,7 +208,7 @@ public class CameraActivity extends AppCompatActivity {
         }
 
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-        String areaName = getAreaName(currentAreaType);
+        String areaName = getAreaName();
         String fileName = "CLASS_" + areaName + "_" + timeStamp + ".jpg";
 
         File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
@@ -253,7 +234,7 @@ public class CameraActivity extends AppCompatActivity {
             @Override
             public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
                 // 图片保存成功后，添加辅助线
-                addGuidelinesToImage(imageFile.getAbsolutePath(), currentAreaType, () -> {
+                addGuidelinesToImage(imageFile.getAbsolutePath(), () -> {
                     // 扫描文件使其在相册中可见
                     MediaScannerConnection.scanFile(CameraActivity.this,
                             new String[]{imageFile.getAbsolutePath()},
@@ -262,7 +243,6 @@ public class CameraActivity extends AppCompatActivity {
                     // 跳转到识别页面
                     Intent intent = new Intent(CameraActivity.this, RecognitionActivity.class);
                     intent.putExtra("IMAGE_PATH", imageFile.getAbsolutePath());
-                    intent.putExtra("AREA_TYPE", currentAreaType.ordinal());
                     startActivity(intent);
                 });
             }
@@ -274,20 +254,11 @@ public class CameraActivity extends AppCompatActivity {
         });
     }
 
-    private String getAreaName(ImageData.AreaType areaType) {
-        switch (areaType) {
-            case FRONT:
-                return "FRONT";
-            case MIDDLE:
-                return "MIDDLE";
-            case BACK:
-                return "BACK";
-            default:
-                return "UNKNOWN";
-        }
+    private String getAreaName() {
+        return "CLASS";
     }
 
-    private void addGuidelinesToImage(String imagePath, ImageData.AreaType areaType, Runnable onComplete) {
+    private void addGuidelinesToImage(String imagePath, Runnable onComplete) {
         // 在工作线程中处理图片，但只有在surface活动时才执行
         if (!isSurfaceActive) {
             if (onComplete != null) {
