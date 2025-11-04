@@ -101,7 +101,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="拍摄前，请选择合适的识别区域（前排、中间或后排），系统会针对不同区域进行优化识别。"
+                    android:text="拍摄前，请选择合适的识别区域，系统会针对不同区域进行优化识别。"
                     android:textSize="14sp"
                     android:textColor="#616161"
                     android:lineSpacingMultiplier="1.5" />
