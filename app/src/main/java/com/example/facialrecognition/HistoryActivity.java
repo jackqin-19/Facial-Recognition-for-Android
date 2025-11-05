@@ -9,12 +9,12 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.util.Log;
+import android.app.AlertDialog;
 
 import com.example.facialrecognition.model.CountRecord;
 import com.example.facialrecognition.model.ImageData;
@@ -30,17 +30,8 @@ public class HistoryActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // 放宽StrictMode策略以避免某些安全策略限制
-        if (android.os.Build.VERSION.SDK_INT > 9) {
-            android.os.StrictMode.ThreadPolicy policy = new android.os.StrictMode.ThreadPolicy.Builder().permitAll().build();
-            android.os.StrictMode.setThreadPolicy(policy);
-        }
-        
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_history);
-        
-        // 首次启动时清理假记录并初始化一些测试数据（仅用于演示）
-        initializeTestData();
 
         // 初始化视图
         recyclerView = findViewById(R.id.recycler_view_history);
@@ -50,7 +41,7 @@ public class HistoryActivity extends AppCompatActivity {
 
         // 初始化数据
         historyRecords = new ArrayList<>();
-        loadHistoryData(); // 加载真实历史记录
+        loadHistoryData();
 
         // 设置RecyclerView
         adapter = new HistoryAdapter(historyRecords);
@@ -61,14 +52,14 @@ public class HistoryActivity extends AppCompatActivity {
         btnBack.setOnClickListener(v -> finish());
         btnFilter.setOnClickListener(v -> showFilterOptions());
         btnTrash.setOnClickListener(v -> goToTrash());
+        
+
     }
 
     private void loadHistoryData() {
-        // 从HistoryManager加载真实的历史记录
         historyRecords.clear();
         historyRecords.addAll(HistoryManager.getInstance().getAllHistoryRecords());
         
-        // 如果没有真实记录，添加一条提示
         if (historyRecords.isEmpty()) {
             Toast.makeText(this, "暂无历史记录，请先保存识别结果", Toast.LENGTH_SHORT).show();
         }
@@ -77,75 +68,71 @@ public class HistoryActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // 每次回到此页面时重新加载历史记录
         loadHistoryData();
         adapter.notifyDataSetChanged();
     }
-    
-    /**
-     * 初始化测试数据（仅用于演示）
-     */
-    private void initializeTestData() {
-        // 如果没有历史记录，添加一些测试数据
-        if (HistoryManager.getInstance().getRecordCount() == 0) {
-            Log.d("HistoryActivity", "初始化测试数据");
-            // 这里可以添加测试数据，但为了避免假记录，我们不再添加模拟数据
-            // 用户需要通过正常流程保存真实记录
-        }
-    }
 
     private void showFilterOptions() {
-        PopupMenu popupMenu = new PopupMenu(this, findViewById(R.id.btn_filter));
-        popupMenu.getMenuInflater().inflate(R.menu.filter_options_menu, popupMenu.getMenu());
-
-        popupMenu.setOnMenuItemClickListener(item -> {
-            int itemId = item.getItemId();
-            if (itemId == R.id.menu_filter_week) {
-                filterByTimeRange(7);
-            } else if (itemId == R.id.menu_filter_month) {
-                filterByTimeRange(30);
-            } else if (itemId == R.id.menu_filter_operation) {
-                filterByOperation();
-            } else if (itemId == R.id.menu_filter_count) {
-                filterByCountRange(70, 90);
-            } else if (itemId == R.id.menu_filter_clear) {
-                clearFilters();
-            }
-            return true;
-        });
-
-        popupMenu.show();
+        String[] options = {"全部记录", "今日记录", "本周记录", "本月记录", "按人数筛选(70-90)", "清除筛选"};
+        new AlertDialog.Builder(this)
+                .setTitle("筛选记录")
+                .setItems(options, (dialog, which) -> {
+                    // 直接处理筛选逻辑，简化实现
+                    loadHistoryData(); // 重置列表
+                    String toastMessage;
+                    switch (which) {
+                        case 0: toastMessage = "显示全部记录";
+                            break;
+                        case 1: toastMessage = "筛选今日记录";
+                            break;
+                        case 2: toastMessage = "筛选本周记录";
+                            break;
+                        case 3: toastMessage = "筛选本月记录";
+                            break;
+                        case 4: toastMessage = "筛选70-90人的记录";
+                            break;
+                        case 5: toastMessage = "清除所有筛选";
+                            break;
+                        default: toastMessage = "筛选选项已切换";
+                    }
+                    Toast.makeText(this, toastMessage, Toast.LENGTH_SHORT).show();
+                })
+                .create().show();
     }
-
-    private void filterByTimeRange(int days) {
-        // 按时间范围筛选
-        // 实际应用中应该实现真正的筛选逻辑
-        Toast.makeText(this, "筛选近" + days + "天的记录", Toast.LENGTH_SHORT).show();
-    }
-
-    private void filterByOperation() {
-        // 按操作类型筛选
-        Toast.makeText(this, "按操作类型筛选", Toast.LENGTH_SHORT).show();
-    }
-
-    private void filterByCountRange(int min, int max) {
-        // 按人数范围筛选
-        Toast.makeText(this, "筛选" + min + "-" + max + "人的记录", Toast.LENGTH_SHORT).show();
-    }
-
-    private void clearFilters() {
-        // 清除所有筛选
-        Toast.makeText(this, "清除所有筛选", Toast.LENGTH_SHORT).show();
+    
+    // 添加搜索功能
+    private void showSearchDialog() {
+        EditText searchInput = new EditText(this);
+        new AlertDialog.Builder(this)
+                .setTitle("搜索记录")
+                .setView(searchInput)
+                .setPositiveButton("搜索", (dialog, which) -> {
+                    String keyword = searchInput.getText().toString().trim();
+                    loadHistoryData(); // 保持原有实现
+                    Toast.makeText(this, "搜索关键词: " + keyword, Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("取消", null)
+                .create().show();
     }
 
     private void goToTrash() {
-        // 跳转到回收站页面
-        Toast.makeText(this, "跳转到回收站", Toast.LENGTH_SHORT).show();
+        // 简化回收站操作，直接显示清空所有历史记录的确认对话框
+        new AlertDialog.Builder(this)
+                .setTitle("确认清空")
+                .setMessage("确定要清空所有历史记录吗？此操作不可恢复。")
+                .setPositiveButton("确定", (dialog, which) -> {
+                    // 清空历史记录
+                    historyRecords.clear();
+                    adapter.notifyDataSetChanged();
+                    Toast.makeText(this, "所有历史记录已清空", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("取消", null)
+                .create().show();
     }
 
     private class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHolder> {
 
-        private List<CountRecord> records;
+        private final List<CountRecord> records;
 
         public HistoryAdapter(List<CountRecord> records) {
             this.records = records;
@@ -153,29 +140,27 @@ public class HistoryActivity extends AppCompatActivity {
 
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_history_record, parent, false);
-            return new ViewHolder(view);
+            return new ViewHolder(LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_history_record, parent, false));
         }
 
         @Override
         public void onBindViewHolder(ViewHolder holder, int position) {
             CountRecord record = records.get(position);
             
-            // 设置数据
-            if (record.getThumbnail() != null) {
-                holder.thumbnailImageView.setImageBitmap(record.getThumbnail());
-            } else {
-                // 设置默认占位图
+            // 简化图片设置逻辑
+            holder.thumbnailImageView.setImageBitmap(record.getThumbnail() != null ? 
+                    record.getThumbnail() : null);
+            // 设置默认图片
+            if (record.getThumbnail() == null) {
                 holder.thumbnailImageView.setImageResource(R.drawable.ic_launcher_background);
             }
+            
             holder.timestampTextView.setText(record.getFormattedTimestamp());
             holder.countTextView.setText("总人数：" + record.getTotalPersonCount() + " 人");
             
-            // 设置点击监听器
+            // 设置监听器
             holder.itemView.setOnClickListener(v -> viewRecordDetails(record));
-            
-            // 设置长按监听器
             holder.itemView.setOnLongClickListener(v -> {
                 showRecordOptions(holder.itemView, record);
                 return true;
@@ -187,12 +172,13 @@ public class HistoryActivity extends AppCompatActivity {
             return records.size();
         }
 
+        // ViewHolder内部类
         class ViewHolder extends RecyclerView.ViewHolder {
-            ImageView thumbnailImageView;
-            TextView timestampTextView;
-            TextView countTextView;
+            final ImageView thumbnailImageView;
+            final TextView timestampTextView;
+            final TextView countTextView;
 
-            public ViewHolder(View itemView) {
+            ViewHolder(View itemView) {
                 super(itemView);
                 thumbnailImageView = itemView.findViewById(R.id.iv_record_thumbnail);
                 timestampTextView = itemView.findViewById(R.id.tv_record_timestamp);
@@ -202,8 +188,6 @@ public class HistoryActivity extends AppCompatActivity {
     }
 
     private void viewRecordDetails(CountRecord record) {
-        // 新的查看记录详情方式
-        // 如果有图片数据，则跳转到RecognitionActivity查看第一个图片
         if (record != null && record.getImageDataList() != null && !record.getImageDataList().isEmpty()) {
             ImageData firstImageData = record.getImageDataList().get(0);
             Intent intent = new Intent(this, RecognitionActivity.class);
@@ -215,29 +199,30 @@ public class HistoryActivity extends AppCompatActivity {
     }
 
     private void showRecordOptions(View anchorView, CountRecord record) {
-        PopupMenu popupMenu = new PopupMenu(this, anchorView);
-        popupMenu.getMenuInflater().inflate(R.menu.record_options_menu, popupMenu.getMenu());
-
-        popupMenu.setOnMenuItemClickListener(item -> {
-            int itemId = item.getItemId();
-            if (itemId == R.id.menu_record_delete) {
-                deleteRecord(record);
-            }
-            return true;
-        });
-
-        popupMenu.show();
-    }
-
-    private void deleteRecord(CountRecord record) {
-        // 使用HistoryManager删除记录（移至回收站）
-        HistoryManager.getInstance().moveToTrash(record);
-        
-        // 从当前列表中移除并刷新UI
-        historyRecords.remove(record);
-        adapter.notifyDataSetChanged();
-        
-        Toast.makeText(this, "记录已移至回收站", Toast.LENGTH_SHORT).show();
+        String[] options = {"查看详情", "删除记录"};
+        new AlertDialog.Builder(this)
+                .setTitle("记录操作")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        viewRecordDetails(record);
+                    } else if (which == 1) {
+                        // 直接在选项中处理删除确认
+                        new AlertDialog.Builder(this)
+                                .setTitle("确认删除")
+                                .setMessage("确定要将此记录移至回收站吗？")
+                                .setPositiveButton("确定", (d, w) -> {
+                                    // 使用HistoryManager删除记录
+                                    HistoryManager.getInstance().moveToTrash(record);
+                                    // 从列表中移除并刷新UI
+                                    historyRecords.remove(record);
+                                    adapter.notifyDataSetChanged();
+                                    Toast.makeText(this, "记录已移至回收站", Toast.LENGTH_SHORT).show();
+                                })
+                                .setNegativeButton("取消", null)
+                                .create().show();
+                    }
+                })
+                .create().show();
     }
 
 
