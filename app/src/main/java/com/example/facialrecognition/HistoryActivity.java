@@ -27,6 +27,8 @@ public class HistoryActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private HistoryAdapter adapter;
     private List<CountRecord> historyRecords;
+    // 筛选条件变量，用于存储当前选择的筛选类型
+    private int currentFilterType = 0; // 0: 全部记录, 1: 今日记录, 2: 本周记录, 3: 本月记录
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,10 +60,40 @@ public class HistoryActivity extends AppCompatActivity {
 
     private void loadHistoryData() {
         historyRecords.clear();
-        historyRecords.addAll(HistoryManager.getInstance().getAllHistoryRecords());
+        List<CountRecord> allRecords = HistoryManager.getInstance().getAllHistoryRecords();
+        
+        // 根据当前筛选条件过滤记录
+        long currentTime = System.currentTimeMillis();
+        long dayInMillis = 24 * 60 * 60 * 1000;
+        long weekInMillis = 7 * dayInMillis;
+        long monthInMillis = 30 * dayInMillis;
+        
+        for (CountRecord record : allRecords) {
+            // 根据筛选类型判断是否添加记录
+            switch (currentFilterType) {
+                case 0: // 全部记录
+                    historyRecords.add(record);
+                    break;
+                case 1: // 今日记录 (24小时内)
+                    if (currentTime - record.getTimestamp() < dayInMillis) {
+                        historyRecords.add(record);
+                    }
+                    break;
+                case 2: // 本周记录 (7天内)
+                    if (currentTime - record.getTimestamp() < weekInMillis) {
+                        historyRecords.add(record);
+                    }
+                    break;
+                case 3: // 本月记录 (30天内)
+                    if (currentTime - record.getTimestamp() < monthInMillis) {
+                        historyRecords.add(record);
+                    }
+                    break;
+            }
+        }
         
         if (historyRecords.isEmpty()) {
-            Toast.makeText(this, "暂无历史记录，请先保存识别结果", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "暂无符合条件的历史记录", Toast.LENGTH_SHORT).show();
         }
     }
     
@@ -73,28 +105,33 @@ public class HistoryActivity extends AppCompatActivity {
     }
 
     private void showFilterOptions() {
-        String[] options = {"全部记录", "今日记录", "本周记录", "本月记录", "按人数筛选(70-90)", "清除筛选"};
+        String[] options = {"全部记录", "今日记录", "本周记录", "本月记录", "清除筛选"};
         new AlertDialog.Builder(this)
                 .setTitle("筛选记录")
                 .setItems(options, (dialog, which) -> {
-                    // 直接处理筛选逻辑，简化实现
-                    loadHistoryData(); // 重置列表
+                    // 更新筛选条件并加载数据
                     String toastMessage;
-                    switch (which) {
-                        case 0: toastMessage = "显示全部记录";
-                            break;
-                        case 1: toastMessage = "筛选今日记录";
-                            break;
-                        case 2: toastMessage = "筛选本周记录";
-                            break;
-                        case 3: toastMessage = "筛选本月记录";
-                            break;
-                        case 4: toastMessage = "筛选70-90人的记录";
-                            break;
-                        case 5: toastMessage = "清除所有筛选";
-                            break;
-                        default: toastMessage = "筛选选项已切换";
+                    if (which == 4) { // 清除筛选
+                        currentFilterType = 0;
+                        toastMessage = "已清除所有筛选，显示全部记录";
+                    } else {
+                        currentFilterType = which;
+                        switch (which) {
+                            case 0: toastMessage = "显示全部记录";
+                                break;
+                            case 1: toastMessage = "筛选今日记录";
+                                break;
+                            case 2: toastMessage = "筛选本周记录";
+                                break;
+                            case 3: toastMessage = "筛选本月记录";
+                                break;
+                            default: toastMessage = "筛选选项已切换";
+                        }
                     }
+                    
+                    // 加载筛选后的数据并刷新列表
+                    loadHistoryData();
+                    adapter.notifyDataSetChanged();
                     Toast.makeText(this, toastMessage, Toast.LENGTH_SHORT).show();
                 })
                 .create().show();
@@ -125,6 +162,27 @@ public class HistoryActivity extends AppCompatActivity {
                     historyRecords.clear();
                     adapter.notifyDataSetChanged();
                     Toast.makeText(this, "所有历史记录已清空", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("取消", null)
+                .create().show();
+    }
+
+    /**
+     * 显示清除筛选确认对话框
+     * 当用户确认后，清除所有筛选条件并重新加载所有记录
+     */
+    private void showClearConfirmation() {
+        new AlertDialog.Builder(this)
+                .setTitle("确认清除筛选")
+                .setMessage("确定要清除所有筛选条件并显示全部记录吗？")
+                .setPositiveButton("确定", (dialog, which) -> {
+                    // 清除筛选条件
+                    currentFilterType = 0;
+                    // 重新加载所有记录
+                    loadHistoryData();
+                    // 刷新列表
+                    adapter.notifyDataSetChanged();
+                    Toast.makeText(this, "已清除所有筛选条件", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("取消", null)
                 .create().show();
