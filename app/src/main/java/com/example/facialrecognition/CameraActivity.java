@@ -265,8 +265,7 @@ public class CameraActivity extends AppCompatActivity {
             }
             
             try {
-                // 这里简化处理，实际应该加载图片并添加辅助线
-                // 辅助线将根据区域类型在不同位置绘制
+                // 这里简化处理，实际可以加载图片并添加辅助线
             } catch (Exception e) {
                 if (isSurfaceActive) {
                     runOnUiThread(() -> Toast.makeText(CameraActivity.this, "添加辅助线失败: " + e.getMessage(), Toast.LENGTH_SHORT).show());

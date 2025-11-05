@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- 顶部工具栏 -->
+    <LinearLayout
+        android:id="@+id/layout_toolbar_top"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="#000000"
+        android:orientation="horizontal"
+        android:paddingHorizontal="10dp">
+
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="50dp"
+            android:layout_height="match_parent"
+            android:src="@android:drawable/ic_media_previous"
+            app:tint="#FFFFFF"
+            android:contentDescription="返回按钮" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="回收站"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp" />
+
+        <ImageButton
+            android:id="@+id/btn_empty_trash"
+            android:layout_width="50dp"
+            android:layout_height="match_parent"
+            android:src="@android:drawable/ic_menu_delete"
+            app:tint="#FFFFFF"
+            android:contentDescription="清空回收站按钮" />
+    </LinearLayout>
+
+    <!-- 回收站记录列表 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_view_trash"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/layout_toolbar_top" />
+
+    <!-- 空状态提示 -->
+    <LinearLayout
+        android:id="@+id/layout_empty_trash"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/layout_toolbar_top"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone">
+        
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@android:drawable/ic_delete"
+            app:tint="#CCCCCC" />
+        
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="回收站为空"
+            android:textColor="#666666"
+            android:textSize="16sp" />
+    </LinearLayout>
+</RelativeLayout>

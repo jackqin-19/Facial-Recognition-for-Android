@@ -153,18 +153,9 @@ public class HistoryActivity extends AppCompatActivity {
     }
 
     private void goToTrash() {
-        // 简化回收站操作，直接显示清空所有历史记录的确认对话框
-        new AlertDialog.Builder(this)
-                .setTitle("确认清空")
-                .setMessage("确定要清空所有历史记录吗？此操作不可恢复。")
-                .setPositiveButton("确定", (dialog, which) -> {
-                    // 清空历史记录
-                    historyRecords.clear();
-                    adapter.notifyDataSetChanged();
-                    Toast.makeText(this, "所有历史记录已清空", Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton("取消", null)
-                .create().show();
+        // 跳转到回收站页面
+        Intent intent = new Intent(this, TrashActivity.class);
+        startActivity(intent);
     }
 
     /**
