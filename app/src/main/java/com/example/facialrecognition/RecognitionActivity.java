@@ -593,6 +593,14 @@ public class RecognitionActivity extends AppCompatActivity {
             // 长按处理 - 转换触摸坐标到原始图像坐标系
             float[] originalCoords = convertToOriginalCoordinates(e.getX(), e.getY());
             
+            // 先检查坐标是否在有效范围内，如果不在直接返回
+            if (originalBitmap == null || 
+                originalCoords[0] < 0 || originalCoords[0] > originalBitmap.getWidth() || 
+                originalCoords[1] < 0 || originalCoords[1] > originalBitmap.getHeight()) {
+                Log.d("LongPress", "长按位置在图片显示区域外，忽略");
+                return;
+            }
+            
             // 精确确保坐标在有效范围内
             originalCoords[0] = Math.max(0.0f, Math.min(originalCoords[0], (float)originalBitmap.getWidth()));
             originalCoords[1] = Math.max(0.0f, Math.min(originalCoords[1], (float)originalBitmap.getHeight()));
@@ -623,7 +631,7 @@ public class RecognitionActivity extends AppCompatActivity {
     
     private float[] convertToOriginalCoordinates(float touchX, float touchY) {
         if (originalBitmap == null || imageView == null) {
-            return new float[]{0, 0};
+            return new float[]{-1, -1}; // 返回无效坐标
         }
         
         // 获取ImageView的变换矩阵
@@ -632,34 +640,37 @@ public class RecognitionActivity extends AppCompatActivity {
         // 创建逆矩阵用于反向变换
         Matrix inverse = new Matrix();
         if (!imageMatrix.invert(inverse)) {
-            // 如果无法反转矩阵，返回默认值
-            return new float[]{0, 0};
+            // 如果无法反转矩阵，返回无效坐标
+            return new float[]{-1, -1};
         }
         
         // 应用逆矩阵转换触摸坐标
         float[] point = new float[]{touchX, touchY};
         inverse.mapPoints(point);
         
-        // 确保坐标在有效范围内
-        point[0] = Math.max(0, Math.min(point[0], originalBitmap.getWidth()));
-        point[1] = Math.max(0, Math.min(point[1], originalBitmap.getHeight()));
-        
         return point;
     }
     
-    private void handleLongPress(float x, float y) {
-        // 检查坐标有效性并限制标记位置在图像边界内，留出20像素边距
-        x = Math.max(20, Math.min(x, originalBitmap.getWidth() - 20));
-        y = Math.max(20, Math.min(y, originalBitmap.getHeight() - 20));
+    private void handleLongPress(float x, float y) { 
+        // 添加边界检查：确保坐标在图片实际范围内 
+        if (originalBitmap == null) return; 
         
-        // 检查是否点击了现有的标记
-        Person clickedPerson = findPersonAtPosition(x, y);
-        if (clickedPerson != null) {
-            showPersonOptions(clickedPerson);
-        } else {
-            // 未点击现有标记，添加新的手动标记
-            addManualMark(x, y);
-        }
+        // 检查坐标是否在图片边界内（留出20像素边距） 
+        if (x < 20 || x > originalBitmap.getWidth() - 20 || 
+            y < 20 || y > originalBitmap.getHeight() - 20) { 
+            // 坐标在图片外部，不添加标记 
+            Log.d("LongPress", "点击位置在图片外部，忽略长按事件"); 
+            return; 
+        } 
+        
+        // 检查是否点击了现有的标记 
+        Person clickedPerson = findPersonAtPosition(x, y); 
+        if (clickedPerson != null) { 
+            showPersonOptions(clickedPerson); 
+        } else { 
+            // 未点击现有标记，添加新的手动标记 
+            addManualMark(x, y); 
+        } 
     }
 
     private Person findPersonAtPosition(float x, float y) {
