@@ -48,7 +48,6 @@ public class CameraActivity extends AppCompatActivity {
     private ImageCapture imageCapture;
     private ExecutorService cameraExecutor;
     private TextView tvGuide;
-    private Paint overlayPaint;
     private boolean isSurfaceActive = true; // Flag to track if surface is active
     private ProcessCameraProvider cameraProvider; // Keep reference to camera provider
     private int cameraRetryCount = 0;
@@ -64,11 +63,6 @@ public class CameraActivity extends AppCompatActivity {
         Button btnCapture = findViewById(R.id.btn_capture);
         ImageButton btnBack = findViewById(R.id.btn_back);
 
-        // 初始化画笔
-        overlayPaint = new Paint();
-        overlayPaint.setStyle(Paint.Style.STROKE);
-        overlayPaint.setStrokeWidth(3);
-        overlayPaint.setColor(Color.GREEN);
         tvGuide.setText("请将整个需要识别的区域纳入相机画面");
         
         // 隐藏不再需要的区域选择RadioGroup
@@ -235,8 +229,8 @@ public class CameraActivity extends AppCompatActivity {
             new ImageCapture.OnImageSavedCallback() {
                 @Override
                 public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
-                    // 图片保存成功后，添加辅助线
-                    addGuidelinesToImage(imageFile.getAbsolutePath(), postCaptureAction);
+                    // 图片保存成功后，直接执行后续操作
+                    runOnUiThread(postCaptureAction);
                 }
 
                 @Override
@@ -248,36 +242,7 @@ public class CameraActivity extends AppCompatActivity {
 
 
 
-    private void addGuidelinesToImage(String imagePath, Runnable onComplete) {
-        // 如果surface不活动或回调为空，直接执行回调并返回
-        if (!isSurfaceActive || onComplete == null) {
-            if (onComplete != null) {
-                runOnUiThread(onComplete);
-            }
-            return;
-        }
-        
-        cameraExecutor.execute(() -> {
-            // 只在工作线程开始时检查一次surface状态
-            if (!isSurfaceActive) {
-                runOnUiThread(onComplete);
-                return;
-            }
-            
-            try {
-                // 这里简化处理，实际可以加载图片并添加辅助线
-            } catch (Exception e) {
-                if (isSurfaceActive) {
-                    runOnUiThread(() -> Toast.makeText(CameraActivity.this, "添加辅助线失败: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-                }
-            } finally {
-                // 无论成功失败，都在finally块中执行回调
-                if (isSurfaceActive) {
-                    runOnUiThread(onComplete);
-                }
-            }
-        });
-    }
+    // 辅助线相关功能已移除
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {

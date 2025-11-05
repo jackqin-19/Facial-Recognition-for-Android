@@ -10,7 +10,6 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import com.example.facialrecognition.FaceDetectorManager;
 import android.view.GestureDetector;
@@ -43,13 +42,11 @@ public class RecognitionActivity extends AppCompatActivity {
     private ImageData imageData;
     private Bitmap originalBitmap;
     private Bitmap markedBitmap;
-    private Matrix imageMatrix = new Matrix();
     private FaceDetectorManager faceDetectorManager;
     private List<Operation> operationHistory;
     private int currentOperationIndex;
     private boolean isFirstDeleteSystem = true;
     private float scale = 1.0f;
-    private float lastScaleFactor = 1.0f;
     private float translateX = 0f;
     private float translateY = 0f;
     private float lastTouchX = 0f;
@@ -196,7 +193,6 @@ public class RecognitionActivity extends AppCompatActivity {
             return;
         }
 
-        // 初始化ImageData（不再需要areaType参数）
         imageData = new ImageData(imagePath, originalBitmap);
         markedBitmap = originalBitmap.copy(Bitmap.Config.ARGB_8888, true);
         imageView.setImageBitmap(markedBitmap);
@@ -481,7 +477,6 @@ public class RecognitionActivity extends AppCompatActivity {
 
     private void undo() {
         if (currentOperationIndex >= 0) {
-            Operation operation = operationHistory.get(currentOperationIndex);
             // 执行撤销操作
             currentOperationIndex--;
             updateUndoRedoButtons();
@@ -494,7 +489,6 @@ public class RecognitionActivity extends AppCompatActivity {
     private void redo() {
         if (currentOperationIndex < operationHistory.size() - 1) {
             currentOperationIndex++;
-            Operation operation = operationHistory.get(currentOperationIndex);
             // 执行重做操作
             updateUndoRedoButtons();
             updateMarkedImage();
@@ -571,14 +565,13 @@ public class RecognitionActivity extends AppCompatActivity {
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
         @Override
         public boolean onScale(ScaleGestureDetector detector) {
-            // 使用增量缩放计算新的缩放比例
-            float scaleFactor = detector.getScaleFactor();
-            float newScale = scale * scaleFactor;
+            // 计算新的缩放比例
+            float newScale = scale * detector.getScaleFactor();
             
-            // 限制缩放范围，确保可以缩小（0.5倍）到放大（4倍）
+            // 限制缩放范围
             newScale = Math.max(0.5f, Math.min(newScale, 4.0f));
             
-            // 只有当缩放比例发生足够变化时才应用，避免频繁重绘
+            // 只有当缩放比例发生足够变化时才应用
             if (Math.abs(newScale - scale) > 0.01f) {
                 scale = newScale;
                 applyMatrix();
@@ -589,7 +582,7 @@ public class RecognitionActivity extends AppCompatActivity {
         
         @Override
         public boolean onScaleBegin(ScaleGestureDetector detector) {
-            // 必须返回true才能启动缩放手势，这对于实现缩小功能至关重要
+            // 启动缩放手势
             return true;
         }
     }
@@ -655,11 +648,9 @@ public class RecognitionActivity extends AppCompatActivity {
     }
     
     private void handleLongPress(float x, float y) {
-        // 检查坐标有效性
-        if (x < 0 || y < 0 || x > originalBitmap.getWidth() || y > originalBitmap.getHeight()) {
-            // 坐标无效，不执行任何操作
-            return;
-        }
+        // 检查坐标有效性并限制标记位置在图像边界内，留出20像素边距
+        x = Math.max(20, Math.min(x, originalBitmap.getWidth() - 20));
+        y = Math.max(20, Math.min(y, originalBitmap.getHeight() - 20));
         
         // 检查是否点击了现有的标记
         Person clickedPerson = findPersonAtPosition(x, y);
@@ -667,9 +658,6 @@ public class RecognitionActivity extends AppCompatActivity {
             showPersonOptions(clickedPerson);
         } else {
             // 未点击现有标记，添加新的手动标记
-            // 限制标记位置在图像边界内，留出20像素边距
-            x = Math.max(20, Math.min(x, originalBitmap.getWidth() - 20));
-            y = Math.max(20, Math.min(y, originalBitmap.getHeight() - 20));
             addManualMark(x, y);
         }
     }
