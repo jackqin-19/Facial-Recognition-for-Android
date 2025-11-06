@@ -8,18 +8,19 @@
 - 🧠 **智能检测**：利用Google ML Kit进行人脸检测和识别
 - ✏️ **手动调整**：支持手动添加、删除或修改检测到的人脸标记
 - 💾 **历史记录**：保存和查看历史识别记录
+- 🗑️ **回收站管理**：可以从回收站恢复或永久删除误删的记录
 - 📖 **操作指南**：提供详细的使用说明
 - 🔄 **撤销重做**：支持操作的撤销和重做功能
 - 📊 **计数统计**：显示识别到的总人数和详细统计信息
 
 ## 技术栈
 
-- **开发语言**：Java
+- **开发语言**：Java (Java 11)
 - **开发框架**：Android SDK (API 21-36)
-- **人脸检测**：Google ML Kit Face Detection API
-- **相机功能**：CameraX
-- **数据处理**：Gson (JSON序列化)
-- **UI组件**：AndroidX, Material Design
+- **人脸检测**：Google ML Kit Face Detection API (16.1.5)
+- **相机功能**：CameraX (1.3.0)
+- **数据处理**：Gson (2.10.1) (JSON序列化)
+- **UI组件**：AndroidX, Material Design, RecyclerView
 - **图像显示**：自定义ImageView支持缩放和手势操作
 
 ## 项目结构
@@ -31,13 +32,24 @@ src/main/java/com/example/facialrecognition/
 ├── RecognitionActivity.java   # 识别结果编辑界面
 ├── ConfirmRecognitionActivity.java # 确认和保存界面
 ├── HistoryActivity.java       # 历史记录界面
+├── TrashActivity.java         # 回收站界面
 ├── GuideActivity.java         # 操作指南界面
 ├── FaceDetectorManager.java   # 人脸检测器管理类
+├── HistoryManager.java        # 历史记录管理类
+├── CustomImageView.java       # 自定义图像视图，支持缩放和手势
 └── model/                     # 数据模型
     ├── ImageData.java         # 图像数据模型
     ├── Person.java            # 人脸模型
     └── CountRecord.java       # 计数记录模型
 ```
+
+## 环境依赖
+
+- Android Studio 4.0 或更高版本
+- Android SDK 36 (compileSdk)
+- 支持的Android设备：Android 5.0 (API 21) 或更高版本 (minSdk)
+- 目标SDK版本：Android 14 (API 36) (targetSdk)
+- Java 11
 
 ## 安装说明
 
@@ -52,10 +64,12 @@ src/main/java/com/example/facialrecognition/
 3. **配置依赖**
    - 项目已包含所有必要依赖，Android Studio会自动同步
    - 主要依赖包括：
-     - androidx.appcompat
-     - androidx.camera
-     - com.google.mlkit:face-detection
-     - com.google.code.gson
+     - `androidx.appcompat` - AndroidX支持库
+     - `androidx.material` - Material Design组件
+     - `androidx.recyclerview:recyclerview:1.3.2` - 列表视图组件
+     - `androidx.camera:camera-*:1.3.0` - 相机功能支持
+     - `com.google.mlkit:face-detection:16.1.5` - 人脸检测API
+     - `com.google.code.gson:gson:2.10.1` - JSON处理库
 
 4. **构建和运行**
    - 选择目标设备或模拟器
@@ -86,6 +100,11 @@ src/main/java/com/example/facialrecognition/
 5. **查看历史**
    - 在主界面点击"历史记录"按钮
    - 查看所有保存的识别记录
+   - 可以删除不需要的记录
+
+6. **回收站管理**
+   - 在历史记录界面可以将记录移至回收站
+   - 从回收站可以恢复记录或永久删除
 
 ## 注意事项
 
